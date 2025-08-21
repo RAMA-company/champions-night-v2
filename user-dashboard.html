@@ -190,7 +190,7 @@
             }
 
             // دریافت و نمایش اطلاعات کاربر از جدول users و پر کردن فرم ویرایش
-            async function fetchUserData(userId) {
+            async function fetchUserData(userId, userEmail) {
                 try {
                     const { data: userData, error: userError } = await supabase
                         .from('users')
@@ -198,15 +198,36 @@
                         .eq('id', userId)
                         .single();
 
-                    if (userError) throw userError;
+                    if (userError && userError.code !== 'PGRST116') {
+                        throw userError;
+                    }
                     
                     if (userData) {
+                        // اطلاعات کاربر وجود دارد، نمایش و پر کردن فیلدها
                         userNameSpan.textContent = userData.full_name;
                         userPhoneSpan.textContent = `شماره تماس: ${userData.phone || '--'}`;
                         membershipCodeSpan.textContent = `کد عضویت: ${userData.membership_code || '--'}`;
-                        // پر کردن فرم ویرایش با اطلاعات فعلی
                         editNameInput.value = userData.full_name;
                         editPhoneInput.value = userData.phone;
+                    } else {
+                        // اطلاعات کاربر در جدول users وجود ندارد، یک رکورد جدید ایجاد می‌کنیم
+                        const { error: insertError } = await supabase
+                            .from('users')
+                            .insert([
+                                { 
+                                    id: userId,
+                                    full_name: 'کاربر جدید', // نام پیش‌فرض
+                                    phone: '--',
+                                    membership_code: Math.floor(100000 + Math.random() * 900000).toString() // کد عضویت تصادفی
+                                }
+                            ]);
+                        
+                        if (insertError) {
+                            throw insertError;
+                        }
+
+                        // پس از ایجاد، مجدداً اطلاعات را واکشی می‌کنیم
+                        await fetchUserData(userId, userEmail);
                     }
                 } catch (err) {
                     console.error('Error fetching user data:', err.message);
@@ -373,7 +394,7 @@
                         }
                         
                         showMessage('اطلاعات شما با موفقیت به‌روزرسانی شد!', 'success');
-                        await fetchUserData(user.id); // به‌روزرسانی اطلاعات نمایش داده شده
+                        await fetchUserData(user.id, user.email); // به‌روزرسانی اطلاعات نمایش داده شده
                         profileModal.classList.add('hidden');
                         
                     } catch (err) {
@@ -385,7 +406,7 @@
 
             // فراخوانی توابع در زمان بارگذاری صفحه
             userEmailSpan.textContent = user.email;
-            await fetchUserData(user.id);
+            await fetchUserData(user.id, user.email);
             await fetchSubscriptionData(user.id);
             await fetchActivityLog(user.id);
 
