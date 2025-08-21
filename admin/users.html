@@ -11,13 +11,297 @@
         body {
             font-family: 'Vazirmatn', sans-serif;
         }
-        .container {
-            padding-left: 1rem;
-            padding-right: 1rem;
+        .container-shadow {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            z-index: 1000;
+            text-align: center;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        .icon {
+            width: 24px;
+            height: 24px;
         }
     </style>
-    <!-- Supabase CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- CSS and JS modules -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" type="text/css" />
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, query, where, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Constants for pagination
+        const USERS_PER_PAGE = 10;
+        let currentPage = 1;
+        let allUsers = [];
+        let filteredUsers = [];
+        let firestoreDb;
+        let auth;
+        let userId;
+
+        /**
+         * Initializes Firebase and authenticates the user.
+         */
+        async function initializeFirebase() {
+            try {
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const app = initializeApp(firebaseConfig);
+                firestoreDb = getFirestore(app);
+                auth = getAuth(app);
+
+                // Authenticate the user
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                userId = auth.currentUser?.uid || crypto.randomUUID();
+
+                setupRealtimeListener(appId);
+                // Add dummy data if the users collection is empty
+                checkAndAddDummyData(appId);
+
+            } catch (error) {
+                console.error("Error during Firebase initialization or sign-in:", error);
+            }
+        }
+
+        /**
+         * Adds dummy user data to Firestore if the collection is empty.
+         * @param {string} appId The application ID.
+         */
+        async function checkAndAddDummyData(appId) {
+            const usersRef = collection(firestoreDb, `artifacts/${appId}/public/data/users`);
+            // Add a temporary user to trigger onSnapshot
+            const tempDoc = doc(usersRef, 'temp-user-check');
+            await setDoc(tempDoc, { dummy: true });
+            
+            // Wait a bit for the listener to populate data
+            setTimeout(async () => {
+                const isUsersEmpty = allUsers.length <= 1; // 1 for the dummy user
+                if (isUsersEmpty) {
+                    const dummyUsers = [
+                        { name: "علی احمدی", membershipId: "001", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString(), isActive: true, notes: "عضو فعال" },
+                        { name: "فاطمه رضایی", membershipId: "002", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString(), isActive: false, notes: "اشتراک منقضی شده" },
+                        { name: "محمد حسینی", membershipId: "003", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() + 45)).toISOString(), isActive: true, notes: "اشتراک بلند مدت" },
+                        { name: "زینب کریمی", membershipId: "004", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(), isActive: true, notes: "اشتراک رو به اتمام" },
+                        { name: "حسین صالحی", membershipId: "005", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() - 20)).toISOString(), isActive: false, notes: "ترک عضویت" },
+                        { name: "لیلا زمانی", membershipId: "006", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(), isActive: true, notes: "عضو جدید" },
+                        { name: "رضا محمدی", membershipId: "007", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() - 10)).toISOString(), isActive: false, notes: "نیاز به پیگیری" },
+                        { name: "سارا لطفی", membershipId: "008", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() + 25)).toISOString(), isActive: true, notes: "عضو فعال" },
+                        { name: "امیر نوری", membershipId: "009", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), isActive: false, notes: "اشتراک منقضی شده" },
+                        { name: "ندا مرادی", membershipId: "010", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(), isActive: true, notes: "عضو فعال" },
+                        { name: "مریم علوی", membershipId: "011", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(), isActive: true, notes: "اشتراک رو به اتمام" },
+                        { name: "وحید پارسا", membershipId: "012", subscriptionEndDate: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString(), isActive: false, notes: "اشتراک منقضی شده" }
+                    ];
+
+                    for (const user of dummyUsers) {
+                        const userDocRef = doc(usersRef, user.membershipId);
+                        await setDoc(userDocRef, { ...user, userId: userId });
+                    }
+                    console.log("Dummy data added to Firestore.");
+                }
+                // Cleanup the temporary user
+                // await deleteDoc(tempDoc);
+            }, 2000);
+        }
+
+        /**
+         * Sets up the real-time listener for the users collection.
+         * @param {string} appId The application ID.
+         */
+        function setupRealtimeListener(appId) {
+            const usersCollectionRef = collection(firestoreDb, `artifacts/${appId}/public/data/users`);
+            const q = query(usersCollectionRef, where("userId", "==", userId));
+
+            onSnapshot(q, (querySnapshot) => {
+                allUsers = [];
+                querySnapshot.forEach((doc) => {
+                    const userData = { id: doc.id, ...doc.data() };
+                    // Exclude the dummy document if it exists
+                    if (userData.id !== 'temp-user-check') {
+                        allUsers.push(userData);
+                    }
+                });
+                console.log("Data fetched from Firestore.");
+                applyFilterAndRender();
+            }, (error) => {
+                console.error("Error listening to users collection:", error);
+            });
+        }
+
+        /**
+         * Renders the users table for the current page.
+         */
+        function renderUsers() {
+            const usersTableBody = document.getElementById('users-table-body');
+            usersTableBody.innerHTML = '';
+
+            const startIndex = (currentPage - 1) * USERS_PER_PAGE;
+            const endIndex = startIndex + USERS_PER_PAGE;
+            const usersToDisplay = filteredUsers.slice(startIndex, endIndex);
+
+            if (usersToDisplay.length === 0) {
+                usersTableBody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-gray-500">
+                    کاربری یافت نشد.
+                </td></tr>`;
+                return;
+            }
+
+            usersToDisplay.forEach(user => {
+                const userRow = document.createElement('tr');
+                userRow.classList.add('hover:bg-gray-50');
+
+                // Check subscription status
+                const now = new Date();
+                const subscriptionEndDate = new Date(user.subscriptionEndDate);
+                const isActive = subscriptionEndDate > now;
+                const statusText = isActive ? 'فعال' : 'غیرفعال';
+                const statusColor = isActive ? 'text-green-500' : 'text-red-500';
+
+                userRow.innerHTML = `
+                    <td class="py-3 px-6 text-gray-800">${user.name}</td>
+                    <td class="py-3 px-6 text-gray-800">${user.membershipId}</td>
+                    <td class="py-3 px-6 text-gray-800">
+                        <span class="font-medium ${statusColor}">${statusText}</span>
+                    </td>
+                    <td class="py-3 px-6">
+                        <a href="user.html?id=${user.membershipId}" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            مشاهده
+                        </a>
+                    </td>
+                `;
+                usersTableBody.appendChild(userRow);
+            });
+        }
+
+        /**
+         * Renders the pagination controls.
+         */
+        function renderPagination() {
+            const paginationControls = document.getElementById('pagination-controls');
+            paginationControls.innerHTML = '';
+            const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+
+            if (totalPages <= 1) return;
+
+            // Previous button
+            const prevButton = document.createElement('button');
+            prevButton.textContent = 'قبلی';
+            prevButton.classList.add('py-2', 'px-4', 'rounded-full', 'font-bold', 'transition-colors', 'duration-200');
+            if (currentPage === 1) {
+                prevButton.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+            } else {
+                prevButton.classList.add('bg-blue-500', 'text-white', 'hover:bg-blue-600');
+                prevButton.addEventListener('click', () => {
+                    currentPage--;
+                    renderUsers();
+                    renderPagination();
+                });
+            }
+            paginationControls.appendChild(prevButton);
+
+            // Page number buttons
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.classList.add('py-2', 'px-4', 'rounded-full', 'font-bold', 'transition-colors', 'duration-200');
+                if (i === currentPage) {
+                    pageButton.classList.add('bg-blue-600', 'text-white');
+                } else {
+                    pageButton.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                    pageButton.addEventListener('click', () => {
+                        currentPage = i;
+                        renderUsers();
+                        renderPagination();
+                    });
+                }
+                paginationControls.appendChild(pageButton);
+            }
+
+            // Next button
+            const nextButton = document.createElement('button');
+            nextButton.textContent = 'بعدی';
+            nextButton.classList.add('py-2', 'px-4', 'rounded-full', 'font-bold', 'transition-colors', 'duration-200');
+            if (currentPage === totalPages) {
+                nextButton.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+            } else {
+                nextButton.classList.add('bg-blue-500', 'text-white', 'hover:bg-blue-600');
+                nextButton.addEventListener('click', () => {
+                    currentPage++;
+                    renderUsers();
+                    renderPagination();
+                });
+            }
+            paginationControls.appendChild(nextButton);
+        }
+
+        /**
+         * Applies the search filter and updates the display.
+         */
+        function applyFilterAndRender() {
+            const searchQuery = document.getElementById('user-search-input').value.toLowerCase();
+            filteredUsers = allUsers.filter(user =>
+                user.name.toLowerCase().includes(searchQuery) ||
+                user.membershipId.toLowerCase().includes(searchQuery)
+            );
+            currentPage = 1; // Reset to first page on new filter
+            renderUsers();
+            renderPagination();
+        }
+
+        /**
+         * Displays a custom message box.
+         * @param {string} message The message to display.
+         */
+        function showMessageBox(message) {
+            const messageBox = document.createElement('div');
+            messageBox.classList.add('message-box');
+            messageBox.innerHTML = `<p>${message}</p><button class="mt-4 bg-blue-500 text-white py-2 px-4 rounded-full" onclick="this.parentNode.remove()">OK</button>`;
+            document.body.appendChild(messageBox);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebase();
+
+            const searchInput = document.getElementById('user-search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', applyFilterAndRender);
+            }
+
+            // You can add logic for the "Add User" button here
+            const addUserBtn = document.getElementById('add-user-btn');
+            if (addUserBtn) {
+                addUserBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showMessageBox("قابلیت افزودن کاربر هنوز پیاده‌سازی نشده است.");
+                });
+            }
+        });
+    </script>
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen">
     <meta name="robots" content="noindex, nofollow">
@@ -29,24 +313,29 @@
                 <span id="gym-name">باشگاه</span> - پنل ادمین
             </h1>
             <div class="flex items-center space-x-4 space-x-reverse">
-                <nav>
-                    <a href="index.html" class="text-gray-600 hover:text-blue-800 transition-colors duration-200">داشبورد</a>
-                    <a href="users.html" class="text-blue-600 hover:text-blue-800 font-bold transition-colors duration-200">اعضا</a>
-                    <a href="reports.html" class="text-gray-600 hover:text-blue-800 transition-colors duration-200">گزارشات</a>
-                    <a href="admins.html" class="text-gray-600 hover:text-blue-800 transition-colors duration-200">ادمین‌ها</a>
+                <nav class="flex space-x-4 space-x-reverse">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-800 transition-colors duration-200">داشبورد</a>
+                    <a href="#" class="text-blue-600 font-bold">اعضا</a>
+                    <a href="admins.html" class="text-gray-600 hover:text-gray-800 transition-colors duration-200">ادمین‌ها</a>
+                    <a href="reports.html" class="text-gray-600 hover:text-gray-800 transition-colors duration-200">گزارشات</a>
                 </nav>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto p-4 flex-grow">
-        <h2 class="text-3xl font-extrabold text-gray-900 mb-6 text-center">مدیریت اعضا</h2>
-        
-        <div class="bg-white p-6 rounded-2xl shadow-lg mb-6">
-            <!-- Search Input -->
-            <div class="mb-4">
-                <input type="text" id="user-search-input" placeholder="جستجو بر اساس نام یا کد عضویت..." class="w-full p-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+    <main class="flex-grow container mx-auto p-4 mt-4">
+        <div class="bg-white p-6 rounded-2xl shadow-lg container-shadow">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 space-y-4 md:space-y-0 md:space-x-4 md:space-x-reverse">
+                <h2 class="text-3xl font-bold text-gray-800">مدیریت اعضا</h2>
+                <button id="add-user-btn" class="bg-blue-500 text-white py-3 px-6 rounded-full font-bold hover:bg-blue-600 transition-colors duration-200 w-full md:w-auto">
+                    افزودن عضو جدید
+                </button>
+            </div>
+            
+            <!-- Search and Filter -->
+            <div class="mb-6">
+                <input type="text" id="user-search-input" placeholder="جستجوی اعضا بر اساس نام یا کد عضویت..." class="w-full p-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             </div>
             
             <!-- Users Table -->
@@ -77,99 +366,5 @@
     <footer class="p-4 text-center text-gray-500 text-sm">
         <p>&copy; 2023 پلتفرم مدیریت باشگاه. تمامی حقوق محفوظ است.</p>
     </footer>
-
-    <!-- Scripts -->
-    <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Supabase configuration
-            const SUPABASE_URL = 'https://mchjfnbbfmslocmexwxs.supabase.co'; 
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaGpmbmJiZm1zbG9jbWV4d3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODk4ODcsImV4cCI6MjA3MTM2NTg4N30.IzJfkGRfyS7fLdTXu0yckGwKRFVt_wMFLZY8g68qBnM'; 
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-            const usersTableBody = document.getElementById('users-table-body');
-            const searchInput = document.getElementById('user-search-input');
-
-            // Fetch and render users
-            async function fetchAndRenderUsers(searchQuery = '') {
-                try {
-                    let query = supabase.from('users').select('*');
-
-                    if (searchQuery) {
-                        query = query.or(`full_name.ilike.%${searchQuery}%,membership_code.ilike.%${searchQuery}%`);
-                    }
-
-                    const { data: users, error } = await query;
-                    if (error) throw error;
-
-                    usersTableBody.innerHTML = ''; // Clear table
-                    if (users.length === 0) {
-                        usersTableBody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-gray-500">هیچ کاربری یافت نشد.</td></tr>';
-                        return;
-                    }
-
-                    users.forEach(user => {
-                        const row = document.createElement('tr');
-                        row.classList.add('hover:bg-gray-50');
-
-                        const statusText = user.is_active ? 'فعال' : 'غیرفعال';
-                        const statusColor = user.is_active ? 'text-green-500' : 'text-red-500';
-                        
-                        row.innerHTML = `
-                            <td class="py-4 px-6 text-gray-700 font-medium">${user.full_name}</td>
-                            <td class="py-4 px-6 text-gray-500">${user.membership_code}</td>
-                            <td class="py-4 px-6 font-bold ${statusColor}">${statusText}</td>
-                            <td class="py-4 px-6">
-                                <button class="toggle-status-btn bg-blue-500 text-white py-1 px-3 rounded-full text-sm hover:bg-blue-600 transition-colors duration-200" data-user-id="${user.id}" data-is-active="${user.is_active}">
-                                    تغییر وضعیت
-                                </button>
-                                <a href="user.html?id=${user.id}" class="text-blue-500 hover:text-blue-700 transition-colors duration-200 ml-2">جزئیات</a>
-                            </td>
-                        `;
-                        usersTableBody.appendChild(row);
-                    });
-                } catch (error) {
-                    console.error('Error fetching users:', error.message);
-                    usersTableBody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-red-500">خطا در بارگذاری اطلاعات: ${error.message}</td></tr>`;
-                }
-            }
-            
-            // Handle status toggle
-            usersTableBody.addEventListener('click', async (e) => {
-                if (e.target.classList.contains('toggle-status-btn')) {
-                    const userId = e.target.dataset.userId;
-                    const isActive = e.target.dataset.isActive === 'true';
-                    
-                    try {
-                        const { data, error } = await supabase
-                            .from('users')
-                            .update({ is_active: !isActive })
-                            .eq('id', userId);
-                        
-                        if (error) throw error;
-                        
-                        // Re-fetch and re-render the list to show the change
-                        fetchAndRenderUsers(searchInput.value);
-                    } catch (error) {
-                        console.error('Error toggling user status:', error.message);
-                        // Using a custom modal or message box instead of alert()
-                        const messageBox = document.createElement('div');
-                        messageBox.classList.add('bg-red-200', 'text-red-800', 'p-3', 'rounded-xl', 'text-center', 'mt-4');
-                        messageBox.textContent = 'خطا در تغییر وضعیت کاربر.';
-                        document.querySelector('main').prepend(messageBox);
-                        setTimeout(() => messageBox.remove(), 5000);
-                    }
-                }
-            });
-
-            // Handle search input
-            searchInput.addEventListener('input', (e) => {
-                const searchQuery = e.target.value;
-                fetchAndRenderUsers(searchQuery);
-            });
-
-            // Initial fetch
-            fetchAndRenderUsers();
-        });
-    </script>
 </body>
 </html>
