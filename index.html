@@ -6,12 +6,26 @@
     <title>ورود به پنل کاربری</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind config for custom font -->
+    <script>
+        // تنظیمات Tailwind برای استفاده از فونت Vazirmatn
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Vazirmatn', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
     <!-- Vazirmatn Font -->
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
     <style>
+        /* استایل‌های سفارشی برای بدنه و سایه */
         body {
             font-family: 'Vazirmatn', sans-serif;
-            background-color: #f7fafc;
+            background-color: #f7fafc; /* رنگ پس‌زمینه */
         }
         .container-shadow {
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
@@ -20,20 +34,32 @@
             border-color: transparent;
         }
     </style>
-    <!-- Supabase CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="w-full max-w-md p-8 bg-white rounded-2xl container-shadow">
-        <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-6">ورود به پنل</h2>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Auth Container -->
+    <div class="container-shadow w-full max-w-md bg-white p-8 rounded-2xl shadow-lg transition-all duration-300">
+        <div class="text-center mb-6">
+            <h2 class="text-3xl font-bold text-gray-800">ورود به پنل</h2>
+        </div>
         
+        <!-- Message Box -->
+        <div id="message-box" class="hidden p-4 mb-4 text-sm rounded-lg border" role="alert">
+            <span id="error-message-text" class="font-medium"></span>
+            <button id="close-message-btn" type="button" class="float-left text-gray-400 hover:text-gray-600 focus:outline-none">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                </svg>
+            </button>
+        </div>
+
         <!-- Login Form -->
-        <form id="login-form">
-            <div class="mb-4">
-                <label for="membership-code-login" class="block text-gray-700 text-sm font-bold mb-2">کد عضویت</label>
-                <input type="text" id="membership-code-login" name="membership-code" class="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="کد عضویت" required>
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label for="email-login" class="block text-gray-700 text-sm font-bold mb-2">ایمیل</label>
+                <input type="email" id="email-login" name="email" class="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ایمیل شما" required>
             </div>
-            <div class="mb-6">
+            <div>
                 <label for="password-login" class="block text-gray-700 text-sm font-bold mb-2">رمز عبور</label>
                 <input type="password" id="password-login" name="password" class="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="رمز عبور" required>
             </div>
@@ -44,65 +70,204 @@
             </div>
         </form>
 
-        <!-- Message Box -->
-        <div id="message-box" class="mt-4 p-3 rounded-xl text-center hidden"></div>
+        <!-- Registration Form -->
+        <form id="register-form" class="space-y-4 hidden">
+            <div>
+                <label for="name-register" class="block text-gray-700 text-sm font-bold mb-2">نام و نام خانوادگی</label>
+                <input type="text" id="name-register" name="name" class="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="نام کامل" required>
+            </div>
+            <div>
+                <label for="email-register" class="block text-gray-700 text-sm font-bold mb-2">ایمیل</label>
+                <input type="email" id="email-register" name="email" class="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ایمیل معتبر" required>
+            </div>
+             <div>
+                <label for="phone-register" class="block text-gray-700 text-sm font-bold mb-2">شماره تماس</label>
+                <input type="tel" id="phone-register" name="phone" class="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="شماره تلفن" required>
+            </div>
+            <div>
+                <label for="password-register" class="block text-gray-700 text-sm font-bold mb-2">رمز عبور</label>
+                <input type="password" id="password-register" name="password" class="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="رمز عبور" required>
+            </div>
+            <div class="flex items-center justify-between">
+                <button type="submit" id="register-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl focus:outline-none focus:shadow-outline w-full transition-all duration-300">
+                    ثبت‌نام
+                </button>
+            </div>
+        </form>
 
+        <div class="mt-6 text-center">
+            <button id="toggle-form-btn" class="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-300">
+                ثبت‌نام نکرده‌اید؟ اینجا کلیک کنید
+            </button>
+        </div>
     </div>
 
+    <!-- Scripts -->
+    <!-- Supabase Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Supabase Configuration -->
     <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Supabase configuration
-            const SUPABASE_URL = 'https://mchjfnbbfmslocmexwxs.supabase.co'; 
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaGpmbmJiZm1zbG9jbWV4d3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODk4ODcsImV4cCI6MjA3MTM2NTg4N30.IzJfkGRfyS7fLdTXu0yckGwKRFVt_wMFLZY8g68qBnM'; 
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // این فایل شامل تنظیمات پروژه Supabase است.
+        const SUPABASE_URL = 'https://mchjfnbbfmslocmexwxs.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaGpmbmJiZm1zbG9jbWV4d3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODk4ODcsImV4cCI6MjA3MTM2NTg4N30.IzJfkGRfyS7fLdTXu0yckGwKRFVt_wMFLZY8g68qBnM';
+    </script>
 
-            const loginForm = document.getElementById('login-form');
-            const messageBox = document.getElementById('message-box');
+    <!-- Main Application Logic -->
+    <script>
+        // این فایل منطق ورود و ثبت‌نام را برای صفحه index.html مدیریت می‌کند.
 
-            function showMessage(text, type = 'info') {
-                messageBox.textContent = text;
-                messageBox.classList.remove('hidden', 'bg-red-200', 'text-red-800', 'bg-green-200', 'text-green-800');
-                if (type === 'error') {
-                    messageBox.classList.add('bg-red-200', 'text-red-800');
-                } else if (type === 'success') {
-                    messageBox.classList.add('bg-green-200', 'text-green-800');
-                }
+        document.addEventListener('DOMContentLoaded', () => {
+            // راه‌اندازی کلاینت Supabase
+            const supabaseUrl = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : null;
+            const supabaseKey = typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : null;
+
+            if (!supabaseUrl || !supabaseKey) {
+                console.error('Supabase URL or Key is not defined in config.js');
+                return;
             }
 
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const membershipCode = document.getElementById('membership-code-login').value.trim();
-                const password = document.getElementById('password-login').value.trim();
+            // ایجاد کلاینت Supabase.
+            // این تابع از شیء سراسری supabase که توسط کتابخانه CDN فراهم شده است، فراخوانی می‌شود.
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
+            // عناصر DOM
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const toggleFormBtn = document.getElementById('toggle-form-btn');
+            const messageBox = document.getElementById('message-box');
+            const errorMessageText = document.getElementById('error-message-text');
+            const closeMessageBtn = document.getElementById('close-message-btn');
 
-                try {
-                    // Query the 'users' table for a matching record
-                    const { data: users, error } = await supabase
-                        .from('users')
-                        .select('id, password')
-                        .eq('membership_code', membershipCode)
-                        .eq('password', password) // This is a security risk in a real app, use Supabase Auth instead
-                        .single();
+            // تابع کمکی برای نمایش پیام‌ها
+            function showMessage(message, type = 'error') {
+                errorMessageText.textContent = message;
+                messageBox.classList.remove('hidden', 'bg-red-100', 'bg-green-100', 'border-red-400', 'border-green-400', 'text-red-700', 'text-green-700');
+                if (type === 'success') {
+                    messageBox.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+                } else {
+                    messageBox.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+                }
+                messageBox.classList.remove('hidden');
+            }
 
-                    if (error && error.code === 'PGRST116') {
-                        showMessage('کد عضویت یا رمز عبور اشتباه است.', 'error');
-                    } else if (error) {
-                        throw error;
-                    } else if (users) {
-                        showMessage('ورود موفقیت‌آمیز بود! در حال انتقال به داشبورد...', 'success');
-                        // In a real application, you would set a session here.
-                        // For this example, we simply redirect.
-                        window.location.href = 'admin/index.html'; 
-                    } else {
-                         // This case is unlikely with .single() but for safety
-                         showMessage('کد عضویت یا رمز عبور اشتباه است.', 'error');
+            // شنونده رویداد دکمه بستن پیام
+            if (closeMessageBtn) {
+                closeMessageBtn.addEventListener('click', () => {
+                    messageBox.classList.add('hidden');
+                });
+            }
+
+            // جابجایی بین فرم‌های ورود و ثبت‌نام
+            if (toggleFormBtn) {
+                toggleFormBtn.addEventListener('click', () => {
+                    loginForm.classList.toggle('hidden');
+                    registerForm.classList.toggle('hidden');
+                    const isLoginVisible = !loginForm.classList.contains('hidden');
+                    toggleFormBtn.textContent = isLoginVisible ? 'ثبت‌نام نکرده‌اید؟ اینجا کلیک کنید' : 'حساب کاربری دارید؟ اینجا کلیک کنید';
+                    messageBox.classList.add('hidden'); // Clear message on form toggle
+                });
+            }
+
+            // -------------------------------------------------------------
+            // منطق ورود
+            // -------------------------------------------------------------
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    messageBox.classList.add('hidden');
+
+                    const email = document.getElementById('email-login').value;
+                    const password = document.getElementById('password-login').value;
+                    
+                    if (!email || !password) {
+                        showMessage('لطفاً ایمیل و رمز عبور را وارد کنید.');
+                        return;
                     }
 
-                } catch (error) {
-                    console.error('Login error:', error.message);
-                    showMessage('خطا در ورود. لطفاً دوباره تلاش کنید.', 'error');
-                }
-            });
+                    try {
+                        const { data, error } = await supabase.auth.signInWithPassword({
+                            email: email,
+                            password: password,
+                        });
+
+                        if (error) {
+                            throw error;
+                        }
+
+                        // فرض بر این است که ورود موفقیت‌آمیز بوده است
+                        showMessage('ورود موفقیت‌آمیز! در حال انتقال به پنل کاربری...', 'success');
+                        window.location.href = './index.html'; // Redirect to the user dashboard
+                    } catch (error) {
+                        console.error('Login Error:', error);
+                        showMessage(error.message || 'خطا در ورود. لطفاً اطلاعات را بررسی کنید.');
+                    }
+                });
+            }
+
+            // -------------------------------------------------------------
+            // منطق ثبت‌نام
+            // -------------------------------------------------------------
+            if (registerForm) {
+                registerForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    messageBox.classList.add('hidden');
+
+                    const name = document.getElementById('name-register').value;
+                    const email = document.getElementById('email-register').value;
+                    const phone = document.getElementById('phone-register').value;
+                    const password = document.getElementById('password-register').value;
+
+                    if (!name || !email || !phone || !password) {
+                        showMessage('لطفاً تمام فیلدها را پر کنید.');
+                        return;
+                    }
+
+                    try {
+                        const { data: authData, error: authError } = await supabase.auth.signUp({
+                            email: email,
+                            password: password,
+                        });
+
+                        if (authError) {
+                            throw authError;
+                        }
+
+                        // اگر ثبت‌نام در Auth موفق بود، اطلاعات را در جدول users ذخیره کنید
+                        const userId = authData.user.id;
+                        const { data: userData, error: userError } = await supabase
+                            .from('users')
+                            .insert([
+                                { 
+                                    id: userId,
+                                    full_name: name,
+                                    phone: phone,
+                                    status: 'pending',
+                                    membership_code: ''
+                                }
+                            ]);
+
+                        if (userError) {
+                             // اگر ذخیره‌سازی در جدول users ناموفق بود، کاربر را از Auth حذف کنید تا دیتابیس تمیز بماند
+                            await supabase.auth.admin.deleteUser(userId);
+                            throw userError;
+                        }
+
+                        showMessage('ثبت‌نام با موفقیت انجام شد! لطفاً ایمیل خود را برای تأیید بررسی کنید.', 'success');
+                        // پس از ثبت‌نام موفق، به صورت خودکار به فرم ورود برمی‌گردیم
+                        setTimeout(() => {
+                            toggleFormBtn.click();
+                            document.getElementById('email-login').value = email;
+                        }, 3000);
+
+                    } catch (error) {
+                        console.error('Registration Error:', error);
+                        showMessage(error.message || 'خطا در ثبت‌نام. لطفاً مجدداً تلاش کنید.');
+                    }
+                });
+            }
         });
     </script>
+
 </body>
 </html>
