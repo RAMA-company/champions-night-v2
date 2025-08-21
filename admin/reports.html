@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل ادمین - گزارشات</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+    </style>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- Header -->
+    <header class="bg-white shadow p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">
+                <span id="gym-name">باشگاه</span> - پنل ادمین
+            </h1>
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <nav>
+                    <a href="index.html" class="text-gray-600 hover:text-blue-800 transition-colors duration-200">داشبورد</a>
+                    <a href="users.html" class="text-gray-600 hover:text-blue-800 transition-colors duration-200">اعضا</a>
+                    <a href="reports.html" class="text-blue-600 hover:text-blue-800 font-bold transition-colors duration-200">گزارشات</a>
+                    <a href="admins.html" class="text-gray-600 hover:text-blue-800 transition-colors duration-200">ادمین‌ها</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 flex-grow">
+        <h2 class="text-3xl font-extrabold text-gray-900 mb-6 text-center">تهیه گزارشات</h2>
+        <div class="bg-white p-6 rounded-2xl shadow-lg">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">تنظیمات گزارش</h3>
+            <div class="space-y-4">
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <label for="report-type" class="block text-gray-700 font-medium">نوع گزارش:</label>
+                    <select id="report-type" class="flex-grow p-2 rounded-full border border-gray-300">
+                        <option value="Sessions">جلسات</option>
+                        <option value="Subscriptions">اشتراک‌ها</option>
+                        <option value="Users">کاربران</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <label for="start-date" class="block text-gray-700">از تاریخ:</label>
+                    <input type="date" id="start-date" class="flex-grow p-2 rounded-full border border-gray-300">
+                    <label for="end-date" class="block text-gray-700">تا تاریخ:</label>
+                    <input type="date" id="end-date" class="flex-grow p-2 rounded-full border border-gray-300">
+                </div>
+                <button id="generate-report-btn" class="w-full bg-blue-500 text-white py-3 px-4 rounded-full font-bold hover:bg-blue-600 transition-colors duration-200">
+                    تهیه گزارش
+                </button>
+            </div>
+            
+            <!-- Download Link Placeholder -->
+            <div id="download-link-container" class="mt-6 hidden">
+                <a href="#" id="download-link" class="text-green-600 font-bold hover:underline">
+                    دانلود فایل CSV
+                </a>
+            </div>
+            
+            <!-- Message Box -->
+            <div id="message-box" class="mt-4 p-3 rounded-xl text-center hidden"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="p-4 text-center text-gray-500 text-sm">
+        <p>&copy; 2023 پلتفرم مدیریت باشگاه. تمامی حقوق محفوظ است.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Supabase configuration
+            const SUPABASE_URL = 'https://mchjfnbbfmslocmexwxs.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaGpmbmJiZm1zbG9jbWV4d3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODk4ODcsImV4cCI6MjA3MTM2NTg4N30.IzJfkGRfyS7fLdTXu0yckGwKRFVt_wMFLZY8g68qBnM';
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            const reportTypeEl = document.getElementById('report-type');
+            const startDateEl = document.getElementById('start-date');
+            const endDateEl = document.getElementById('end-date');
+            const generateBtn = document.getElementById('generate-report-btn');
+            const downloadLinkContainer = document.getElementById('download-link-container');
+            const downloadLink = document.getElementById('download-link');
+            const messageBox = document.getElementById('message-box');
+
+            function showMessage(text, type = 'info') {
+                messageBox.textContent = text;
+                messageBox.classList.remove('hidden', 'bg-red-200', 'text-red-800', 'bg-green-200', 'text-green-800');
+                if (type === 'error') {
+                    messageBox.classList.add('bg-red-200', 'text-red-800');
+                } else if (type === 'success') {
+                    messageBox.classList.add('bg-green-200', 'text-green-800');
+                }
+                messageBox.classList.remove('hidden');
+            }
+
+            generateBtn.addEventListener('click', async () => {
+                const reportType = reportTypeEl.value;
+                const startDate = startDateEl.value;
+                const endDate = endDateEl.value;
+
+                if (!startDate || !endDate) {
+                    showMessage('لطفا تاریخ شروع و پایان را انتخاب کنید.', 'error');
+                    return;
+                }
+
+                downloadLinkContainer.classList.add('hidden');
+                showMessage('در حال تهیه گزارش...', 'info');
+
+                try {
+                    let query = supabase.from(reportType.toLowerCase()).select('*');
+                    
+                    // Add date range filter
+                    if (reportType === 'Sessions' || reportType === 'Subscriptions') {
+                        query = query.gte('created_at', startDate).lte('created_at', endDate);
+                    } else if (reportType === 'Users') {
+                        // User reports can be filtered by sign-up date if the table has it
+                        // For this example, we'll just fetch all users
+                        query = query.gte('created_at', startDate).lte('created_at', endDate);
+                    }
+
+                    const { data, error } = await query;
+                    
+                    if (error) throw error;
+                    
+                    if (data.length === 0) {
+                        showMessage('هیچ داده‌ای در بازه زمانی انتخاب شده یافت نشد.', 'info');
+                        return;
+                    }
+                    
+                    // Generate CSV content
+                    const csvContent = generateCSV(data);
+                    
+                    // Create Blob and URL for download
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    downloadLink.href = url;
+                    downloadLink.download = `${reportType}-report-${startDate}-to-${endDate}.csv`;
+                    downloadLinkContainer.classList.remove('hidden');
+                    showMessage('گزارش با موفقیت تهیه شد. برای دانلود روی لینک زیر کلیک کنید.', 'success');
+                    
+                } catch (error) {
+                    console.error('Error generating report:', error.message);
+                    showMessage('خطا در تهیه گزارش: ' + error.message, 'error');
+                }
+            });
+
+            function generateCSV(data) {
+                if (!data || data.length === 0) return '';
+
+                const headers = Object.keys(data[0]);
+                const csvRows = [
+                    headers.join(',')
+                ];
+
+                for (const row of data) {
+                    const values = headers.map(header => {
+                        const value = row[header];
+                        const escaped = ('' + value).replace(/"/g, '""');
+                        return `"${escaped}"`;
+                    });
+                    csvRows.push(values.join(','));
+                }
+
+                return csvRows.join('\n');
+            }
+        });
+    </script>
+</body>
+</html>

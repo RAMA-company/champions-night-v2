@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل ادمین - داشبورد</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+    </style>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- CSS and JS modules -->
+    <link rel="stylesheet" href="../assets/vazirmatn.css">
+    <link rel="stylesheet" href="../user/styles.css">
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+    <!-- Meta robots tag for SEO -->
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- Header -->
+    <header class="bg-white shadow p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">
+                <span id="gym-name">باشگاه</span> - پنل ادمین
+            </h1>
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <nav>
+                    <a href="index.html" class="text-blue-600 hover:text-blue-800 font-bold transition-colors duration-200">داشبورد</a>
+                    <a href="users.html" class="text-gray-600 hover:text-blue-800 transition-colors duration-200">اعضا</a>
+                    <a href="reports.html" class="text-gray-600 hover:text-blue-800 transition-colors duration-200">گزارشات</a>
+                    <a href="admins.html" class="text-gray-600 hover:text-blue-800 transition-colors duration-200">ادمین‌ها</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 flex-grow">
+        <h2 class="text-3xl font-extrabold text-gray-900 mb-6 text-center">داشبورد مدیریتی</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Card for Total Members -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg text-center">
+                <h3 class="text-xl font-bold mb-2 text-gray-800">تعداد کل اعضا</h3>
+                <p class="text-4xl font-bold text-blue-600" id="total-members">--</p>
+            </div>
+
+            <!-- Card for This Month's Sessions -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg text-center">
+                <h3 class="text-xl font-bold mb-2 text-gray-800">جلسات این ماه</h3>
+                <p class="text-4xl font-bold text-green-600" id="sessions-this-month">--</p>
+            </div>
+            
+            <!-- Card for Subscriptions about to expire -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h3 class="text-xl font-bold mb-2 text-gray-800">اشتراک‌های رو به اتمام</h3>
+                <ul class="space-y-2 text-gray-700">
+                    <li>تا 7 روز: <span id="expiring-7-days" class="font-bold">--</span></li>
+                    <li>تا 12 روز: <span id="expiring-12-days" class="font-bold">--</span></li>
+                    <li>تا 30 روز: <span id="expiring-30-days" class="font-bold">--</span></li>
+                </ul>
+            </div>
+            
+            <!-- Card for Average Consistency Rate -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg text-center">
+                <h3 class="text-xl font-bold mb-2 text-gray-800">نرخ استمرار (ماه جاری)</h3>
+                <p class="text-4xl font-bold text-blue-600" id="avg-consistency">--%</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="p-4 text-center text-gray-500 text-sm">
+        <p>&copy; 2023 پلتفرم مدیریت باشگاه. تمامی حقوق محفوظ است.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // IMPORTANT: You must replace the placeholder below with your actual
+            // public anonymous key. You can find it in your Supabase dashboard
+            // under Settings > API.
+            const SUPABASE_URL = 'https://mchjfnbbfmslocmexwxs.supabase.co'; 
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaGpmbmJiZm1zbG9jbWV4d3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODk4ODcsImV4cCI6MjA3MTM2NTg4N30.IzJfkGRfyS7fLdTXu0yckGwKRFVt_wMFLZY8g68qBnM'; 
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // DOM elements
+            const totalMembersEl = document.getElementById('total-members');
+            const sessionsThisMonthEl = document.getElementById('sessions-this-month');
+            const expiring7DaysEl = document.getElementById('expiring-7-days');
+            const expiring12DaysEl = document.getElementById('expiring-12-days');
+            const expiring30DaysEl = document.getElementById('expiring-30-days');
+            const avgConsistencyEl = document.getElementById('avg-consistency');
+
+            /**
+             * Fetches and displays the total number of users.
+             */
+            async function fetchTotalUsers() {
+                try {
+                    const { count, error } = await supabase
+                        .from('users')
+                        .select('*', { count: 'exact', head: true });
+                    
+                    if (error) throw error;
+                    
+                    totalMembersEl.textContent = count;
+                } catch (error) {
+                    console.error('Error fetching total users:', error);
+                    totalMembersEl.textContent = 'خطا';
+                }
+            }
+
+            /**
+             * Fetches and displays the number of sessions in the current month.
+             */
+            async function fetchSessionsThisMonth() {
+                try {
+                    const today = new Date();
+                    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+                    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+                    const { count, error } = await supabase
+                        .from('sessions')
+                        .select('*', { count: 'exact', head: true })
+                        .gte('session_date', startOfMonth)
+                        .lte('session_date', endOfMonth);
+                    
+                    if (error) throw error;
+                    
+                    sessionsThisMonthEl.textContent = count;
+                } catch (error) {
+                    console.error('Error fetching sessions this month:', error);
+                    sessionsThisMonthEl.textContent = 'خطا';
+                }
+            }
+
+            /**
+             * Fetches and displays the number of subscriptions expiring within a given number of days.
+             * @param {number} days - The number of days to check for expiration.
+             * @param {HTMLElement} element - The DOM element to update with the count.
+             */
+            async function fetchExpiringSubscriptions(days, element) {
+                try {
+                    const today = new Date();
+                    const todayString = today.toISOString().split('T')[0];
+                    const futureDate = new Date();
+                    futureDate.setDate(today.getDate() + days);
+                    const futureDateString = futureDate.toISOString().split('T')[0];
+
+                    const { count, error } = await supabase
+                        .from('subscriptions')
+                        .select('*', { count: 'exact', head: true })
+                        .gte('end_date', todayString)
+                        .lte('end_date', futureDateString);
+                    
+                    if (error) throw error;
+                    
+                    element.textContent = count;
+                } catch (error) {
+                    console.error(`Error fetching expiring subscriptions for ${days} days:`, error);
+                    element.textContent = 'خطا';
+                }
+            }
+            
+            /**
+             * Calculates and displays the average consistency rate for the current month.
+             */
+            async function fetchAverageConsistency() {
+                try {
+                    const today = new Date();
+                    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+                    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+                    // Count total active users with a session this month
+                    const { count: activeUsersCount, error: activeError } = await supabase
+                        .from('sessions')
+                        .select('user_id', { count: 'exact' })
+                        .gte('created_at', startOfMonth)
+                        .lte('created_at', endOfMonth)
+                        .limit(1); // Using limit 1 to avoid fetching all data, just the count
+
+                    if (activeError) throw activeError;
+                    
+                    const { count: totalUsersCount, error: totalError } = await supabase
+                        .from('users')
+                        .select('id', { count: 'exact' });
+                        
+                    if (totalError) throw totalError;
+
+                    if (totalUsersCount > 0) {
+                        const consistencyRate = (activeUsersCount / totalUsersCount) * 100;
+                        avgConsistencyEl.textContent = `${consistencyRate.toFixed(0)}%`;
+                    } else {
+                        avgConsistencyEl.textContent = '0%';
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching average consistency:', error);
+                    avgConsistencyEl.textContent = 'خطا';
+                }
+            }
+
+            // Call all functions to load data
+            fetchTotalUsers();
+            fetchSessionsThisMonth();
+            fetchExpiringSubscriptions(7, expiring7DaysEl);
+            fetchExpiringSubscriptions(12, expiring12DaysEl);
+            fetchExpiringSubscriptions(30, expiring30DaysEl);
+            fetchAverageConsistency();
+        });
+    </script>
+</body>
+</html>
