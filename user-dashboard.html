@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل کاربری</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* استفاده از فونت Vazirmatn */
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #f7fafc;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">
+                <span id="gym-name">باشگاه</span> - پنل کاربری
+            </h1>
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <span id="user-email" class="text-gray-600"></span>
+                <button id="logout-btn" class="bg-red-500 text-white py-2 px-4 rounded-full font-bold hover:bg-red-600 transition-colors duration-200">
+                    خروج
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 flex-grow">
+        <div class="bg-white p-6 rounded-2xl shadow-lg text-center">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">
+                خوش آمدید، <span id="user-name">کاربر</span>!
+            </h2>
+            <p class="text-gray-600">اینجا داشبورد شماست. در آینده اطلاعات مربوط به برنامه ورزشی و وضعیت اشتراک شما نمایش داده خواهد شد.</p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="p-4 text-center text-gray-500 text-sm">
+        <p>&copy; 2023 پلتفرم مدیریت باشگاه. تمامی حقوق محفوظ است.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <!-- Supabase Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Supabase Configuration -->
+    <script>
+        // این فایل شامل تنظیمات پروژه Supabase است.
+        const SUPABASE_URL = 'https://mchjfnbbfmslocmexwxs.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaGpmbmJiZm1zbG9jbWV4d3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODk4ODcsImV4cCI6MjA3MTM2NTg4N30.IzJfkGRfyS7fLdTXu0yckGwKRFVt_wMFLZY8g68qBnM';
+    </script>
+
+    <!-- Main Application Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const supabaseUrl = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : null;
+            const supabaseKey = typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : null;
+
+            if (!supabaseUrl || !supabaseKey) {
+                console.error('Supabase URL or Key is not defined.');
+                return;
+            }
+
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+            // بررسی وضعیت احراز هویت
+            const { data: { user }, error } = await supabase.auth.getUser();
+
+            if (error || !user) {
+                // اگر کاربر وارد نشده باشد، به صفحه ورود برگردانده می‌شود
+                window.location.href = 'index.html'; 
+                return;
+            }
+
+            // نمایش اطلاعات کاربر
+            const userEmailSpan = document.getElementById('user-email');
+            const userNameSpan = document.getElementById('user-name');
+            userEmailSpan.textContent = user.email;
+
+            // دریافت نام کامل کاربر از جدول users
+            try {
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('full_name')
+                    .eq('id', user.id)
+                    .single();
+
+                if (userError) throw userError;
+                
+                if (userData && userData.full_name) {
+                    userNameSpan.textContent = userData.full_name;
+                }
+            } catch (err) {
+                console.error('Error fetching user data:', err.message);
+            }
+
+            // منطق خروج از حساب کاربری
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    const { error } = await supabase.auth.signOut();
+                    if (error) {
+                        console.error('Error signing out:', error.message);
+                    }
+                    // همیشه به صفحه ورود برگردانده می‌شود
+                    window.location.href = 'index.html';
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
