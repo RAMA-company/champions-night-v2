@@ -197,7 +197,8 @@
 
                         // فرض بر این است که ورود موفقیت‌آمیز بوده است
                         showMessage('ورود موفقیت‌آمیز! در حال انتقال به پنل کاربری...', 'success');
-                        window.location.href = './index.html'; // Redirect to the user dashboard
+                        // تغییر مسیر به آدرس نسبی صحیح
+                        window.location.href = 'user-dashboard.html'; 
                     } catch (error) {
                         console.error('Login Error:', error);
                         showMessage(error.message || 'خطا در ورود. لطفاً اطلاعات را بررسی کنید.');
