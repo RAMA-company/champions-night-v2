@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ورود به پنل کاربری</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vazirmatn Font -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #f7fafc;
+        }
+        .container-shadow {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        input:focus {
+            border-color: transparent;
+        }
+    </style>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md p-8 bg-white rounded-2xl container-shadow">
+        <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-6">ورود به پنل</h2>
+        
+        <!-- Login Form -->
+        <form id="login-form">
+            <div class="mb-4">
+                <label for="membership-code-login" class="block text-gray-700 text-sm font-bold mb-2">کد عضویت</label>
+                <input type="text" id="membership-code-login" name="membership-code" class="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="کد عضویت" required>
+            </div>
+            <div class="mb-6">
+                <label for="password-login" class="block text-gray-700 text-sm font-bold mb-2">رمز عبور</label>
+                <input type="password" id="password-login" name="password" class="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="رمز عبور" required>
+            </div>
+            <div class="flex items-center justify-between">
+                <button type="submit" id="login-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl focus:outline-none focus:shadow-outline w-full transition-all duration-300">
+                    ورود
+                </button>
+            </div>
+        </form>
+
+        <!-- Message Box -->
+        <div id="message-box" class="mt-4 p-3 rounded-xl text-center hidden"></div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Supabase configuration
+            const SUPABASE_URL = 'https://mchjfnbbfmslocmexwxs.supabase.co'; 
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaGpmbmJiZm1zbG9jbWV4d3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODk4ODcsImV4cCI6MjA3MTM2NTg4N30.IzJfkGRfyS7fLdTXu0yckGwKRFVt_wMFLZY8g68qBnM'; 
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            const loginForm = document.getElementById('login-form');
+            const messageBox = document.getElementById('message-box');
+
+            function showMessage(text, type = 'info') {
+                messageBox.textContent = text;
+                messageBox.classList.remove('hidden', 'bg-red-200', 'text-red-800', 'bg-green-200', 'text-green-800');
+                if (type === 'error') {
+                    messageBox.classList.add('bg-red-200', 'text-red-800');
+                } else if (type === 'success') {
+                    messageBox.classList.add('bg-green-200', 'text-green-800');
+                }
+            }
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const membershipCode = document.getElementById('membership-code-login').value.trim();
+                const password = document.getElementById('password-login').value.trim();
+
+                try {
+                    // Query the 'users' table for a matching record
+                    const { data: users, error } = await supabase
+                        .from('users')
+                        .select('id, password')
+                        .eq('membership_code', membershipCode)
+                        .eq('password', password) // This is a security risk in a real app, use Supabase Auth instead
+                        .single();
+
+                    if (error && error.code === 'PGRST116') {
+                        showMessage('کد عضویت یا رمز عبور اشتباه است.', 'error');
+                    } else if (error) {
+                        throw error;
+                    } else if (users) {
+                        showMessage('ورود موفقیت‌آمیز بود! در حال انتقال به داشبورد...', 'success');
+                        // In a real application, you would set a session here.
+                        // For this example, we simply redirect.
+                        window.location.href = 'admin/index.html'; 
+                    } else {
+                         // This case is unlikely with .single() but for safety
+                         showMessage('کد عضویت یا رمز عبور اشتباه است.', 'error');
+                    }
+
+                } catch (error) {
+                    console.error('Login error:', error.message);
+                    showMessage('خطا در ورود. لطفاً دوباره تلاش کنید.', 'error');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
