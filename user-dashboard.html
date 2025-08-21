@@ -393,8 +393,11 @@
                             throw error;
                         }
                         
+                        // به‌روزرسانی مستقیم رابط کاربری
+                        userNameSpan.textContent = newName;
+                        userPhoneSpan.textContent = `شماره تماس: ${newPhone}`;
+                        
                         showMessage('اطلاعات شما با موفقیت به‌روزرسانی شد!', 'success');
-                        await fetchUserData(user.id, user.email); // به‌روزرسانی اطلاعات نمایش داده شده
                         profileModal.classList.add('hidden');
                         
                     } catch (err) {
