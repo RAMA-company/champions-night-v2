@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل ادمین - داشبورد</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+    </style>
+    <!-- CSS and JS modules -->
+    <link rel="stylesheet" href="../assets/vazirmatn.css">
+    <link rel="stylesheet" href="../user/styles.css">
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+    <!-- Meta robots tag for SEO -->
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- Header -->
+    <header class="bg-white shadow p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">
+                <span id="gym-name">باشگاه</span> - پنل ادمین
+            </h1>
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <nav class="hidden md:flex space-x-4 space-x-reverse">
+                    <a href="admins-index.html" class="text-gray-600 hover:text-blue-500 font-bold">داشبورد</a>
+                    <a href="users.html" class="text-gray-600 hover:text-blue-500 font-bold">اعضا</a>
+                    <a href="admins.html" class="text-gray-600 hover:text-blue-500 font-bold">مدیران</a>
+                    <a href="reports.html" class="text-gray-600 hover:text-blue-500 font-bold">گزارشات</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 flex-grow">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6">داشبورد</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Card for Active Members -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h3 class="text-xl font-bold mb-2 text-gray-800">اعضای فعال</h3>
+                <p class="text-4xl font-bold text-blue-600" id="active-members">--</p>
+            </div>
+
+            <!-- Card for Inactive Members -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h3 class="text-xl font-bold mb-2 text-gray-800">اعضای غیرفعال</h3>
+                <p class="text-4xl font-bold text-red-600" id="inactive-members">--</p>
+            </div>
+            
+            <!-- Card for Expiring Subscriptions -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h3 class="text-xl font-bold mb-2 text-gray-800">اشتراک‌های رو به اتمام</h3>
+                <ul class="space-y-2">
+                    <li>7 روز: <span id="expiring-7-days" class="font-bold">--</span></li>
+                    <li>12 روز: <span id="expiring-12-days" class="font-bold">--</span></li>
+                    <li>30 روز: <span id="expiring-30-days" class="font-bold">--</span></li>
+                </ul>
+            </div>
+            
+            <!-- Card for Average Consistency Rate -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h3 class="text-xl font-bold mb-2 text-gray-800">نرخ استمرار (ماه جاری)</h3>
+                <p class="text-4xl font-bold text-blue-600" id="avg-consistency">--%</p>
+            </div>
+
+            <!-- Card for Placeholder -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h3 class="text-xl font-bold mb-2 text-gray-800">نمودارها</h3>
+                <div class="w-full h-32 bg-gray-50 rounded-lg">
+                    <!-- Placeholder for charts -->
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="p-4 text-center text-gray-500 text-sm">
+        <p>&copy; 2025 پلتفرم مدیریت باشگاه. تمامی حقوق محفوظ است.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script type="module" src="../user/app.js"></script>
+</body>
+</html>
