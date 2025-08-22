@@ -29,27 +29,45 @@
                 <nav class="hidden md:flex space-x-4 space-x-reverse">
                     <a href="admins-index.html" class="text-gray-600 hover:text-blue-500 font-bold">داشبورد</a>
                     <a href="users.html" class="text-gray-600 hover:text-blue-500 font-bold">اعضا</a>
-                    <a href="admins.html" class="text-gray-600 hover:text-blue-500 font-bold">مدیران</a>
+                    <a href="admins.html" class="text-blue-500 font-bold">مدیران</a>
                     <a href="reports.html" class="text-gray-600 hover:text-blue-500 font-bold">گزارشات</a>
                 </nav>
+                <div class="md:hidden">
+                    <button id="menu-btn" class="text-gray-600 hover:text-blue-500 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
+        <!-- Mobile Menu -->
+        <nav id="mobile-menu" class="md:hidden mt-2 hidden text-center space-y-2">
+            <a href="admins-index.html" class="block py-2 text-gray-600 hover:text-blue-500 font-bold">داشبورد</a>
+            <a href="users.html" class="block py-2 text-gray-600 hover:text-blue-500 font-bold">اعضا</a>
+            <a href="admins.html" class="block py-2 text-blue-500 font-bold">مدیران</a>
+            <a href="reports.html" class="block py-2 text-gray-600 hover:text-blue-500 font-bold">گزارشات</a>
+        </nav>
     </header>
 
     <!-- Main Content -->
     <main class="container mx-auto p-4 flex-grow">
         <div class="bg-white p-6 rounded-2xl shadow-lg">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">مدیریت مدیران</h2>
-
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">مدیران</h2>
+            
             <!-- Add Admin Form -->
-            <form id="add-admin-form" class="mb-6">
-                <label for="admin-email-input" class="block text-lg font-medium text-gray-700 mb-2">افزودن مدیر جدید</label>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <input type="email" id="admin-email-input" placeholder="ایمیل مدیر" required class="w-full p-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <button type="submit" class="bg-blue-500 text-white py-2 px-6 rounded-full font-bold hover:bg-blue-600 transition-colors duration-200">
-                        افزودن ادمین
-                    </button>
+            <form id="add-admin-form" class="mb-6 flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 md:space-x-reverse">
+                <div class="flex-grow w-full md:w-auto">
+                    <label for="admin-email" class="sr-only">ایمیل ادمین</label>
+                    <input type="email" id="admin-email" placeholder="ایمیل ادمین" required class="w-full p-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
+                <div class="flex-grow w-full md:w-auto">
+                    <label for="admin-role" class="sr-only">نقش مدیر</label>
+                    <input type="text" id="admin-role" placeholder="نقش مدیر" required class="w-full p-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <button type="submit" class="bg-blue-500 text-white py-2 px-6 rounded-full font-bold hover:bg-blue-600 transition-colors duration-200">
+                    افزودن ادمین
+                </button>
             </form>
             
             <!-- Admins Table -->
@@ -76,6 +94,63 @@
     </footer>
 
     <!-- Scripts -->
-    <script type="module" src="../user/app.js"></script>
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.2/+esm';
+
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://mchjfnbbfmslocmexwxs.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaGpmbmJiZm1zbG9jbWV4d3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODk4ODcsImV4cCI6MjA3MTM2NTg4N30.IzJfkGRfyS7fLdTXu0yckGwKRFVt_wMFLZY8g68qBnM';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Function to fetch and display admins
+        async function fetchAdmins() {
+            const { data, error } = await supabase.from('admins').select('*');
+            if (error) {
+                console.error('Error fetching admins:', error);
+                return;
+            }
+
+            const tableBody = document.getElementById('admins-table-body');
+            tableBody.innerHTML = '';
+            data.forEach(admin => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 text-right';
+                row.innerHTML = `
+                    <td class="py-3 px-6">${admin.email}</td>
+                    <td class="py-3 px-6">${admin.role}</td>
+                    <td class="py-3 px-6">${new Date(admin.created_at).toLocaleDateString('fa-IR')}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Function to add a new admin
+        async function addAdmin(event) {
+            event.preventDefault();
+            const email = document.getElementById('admin-email').value;
+            const role = document.getElementById('admin-role').value;
+
+            const { data, error } = await supabase.from('admins').insert([{ email, role }]);
+            if (error) {
+                console.error('Error adding admin:', error);
+                // In a real app, show a user-friendly error message
+                return;
+            }
+
+            console.log('Admin added successfully:', data);
+            document.getElementById('add-admin-form').reset();
+            fetchAdmins();
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAdmins();
+            document.getElementById('add-admin-form').addEventListener('submit', addAdmin);
+            document.getElementById('menu-btn').addEventListener('click', () => {
+                const mobileMenu = document.getElementById('mobile-menu');
+                mobileMenu.classList.toggle('hidden');
+            });
+        });
+    </script>
 </body>
 </html>
