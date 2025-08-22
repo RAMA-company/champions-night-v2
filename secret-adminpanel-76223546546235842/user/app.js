@@ -7,6 +7,8 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../assets/config.js';
 // ایجاد کلاینت Supabase
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+console.log('فایل app.js با موفقیت بارگذاری شد!');
+
 // اجرای توابع بر اساس صفحه فعلی
 document.addEventListener('DOMContentLoaded', () => {
     // از طریق URL تشخیص می‌دهیم که در کدام صفحه هستیم
@@ -246,7 +248,7 @@ async function loadAdmins() {
 
 /**
  * تنظیمات صفحه گزارشات در reports.html
- * جداول: users, subscriptions, activity_log, admins
+ * جداول: users, subscriptions, sessions, admins
  */
 function setupReportsPage() {
     console.log('آماده‌سازی صفحه گزارشات...');
@@ -262,11 +264,20 @@ function setupReportsPage() {
 
         try {
             let query = supabase.from(sheet).select('*');
+            
+            // بسته به جدول، فیلد تاریخ را انتخاب می‌کنیم
+            let dateColumn = 'created_at';
+            if (sheet === 'sessions') {
+                dateColumn = 'session_date';
+            } else if (sheet === 'subscriptions') {
+                dateColumn = 'start_date';
+            }
+
             if (startDate) {
-                query = query.gte('created_at', startDate);
+                query = query.gte(dateColumn, startDate);
             }
             if (endDate) {
-                query = query.lte('created_at', endDate);
+                query = query.lte(dateColumn, endDate);
             }
 
             const { data, error } = await query;
