@@ -28,36 +28,48 @@
             </h1>
             <div class="flex items-center space-x-4 space-x-reverse">
                 <nav class="hidden md:flex space-x-4 space-x-reverse">
-                    <a href="admins-index.html" class="text-gray-600 hover:text-blue-500 font-bold">داشبورد</a>
+                    <a href="admins-index.html" class="text-blue-500 font-bold">داشبورد</a>
                     <a href="users.html" class="text-gray-600 hover:text-blue-500 font-bold">اعضا</a>
                     <a href="admins.html" class="text-gray-600 hover:text-blue-500 font-bold">مدیران</a>
                     <a href="reports.html" class="text-gray-600 hover:text-blue-500 font-bold">گزارشات</a>
                 </nav>
+                <div class="md:hidden">
+                    <button id="menu-btn" class="text-gray-600 hover:text-blue-500 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
+        <!-- Mobile Menu -->
+        <nav id="mobile-menu" class="md:hidden mt-2 hidden text-center space-y-2">
+            <a href="admins-index.html" class="block py-2 text-blue-500 font-bold">داشبورد</a>
+            <a href="users.html" class="block py-2 text-gray-600 hover:text-blue-500 font-bold">اعضا</a>
+            <a href="admins.html" class="block py-2 text-gray-600 hover:text-blue-500 font-bold">مدیران</a>
+            <a href="reports.html" class="block py-2 text-gray-600 hover:text-blue-500 font-bold">گزارشات</a>
+        </nav>
     </header>
-
+    
     <!-- Main Content -->
     <main class="container mx-auto p-4 flex-grow">
-        <h2 class="text-3xl font-bold text-gray-800 mb-6">داشبورد</h2>
-        
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Card for Total Members -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h3 class="text-xl font-bold mb-2 text-gray-800">تعداد کل اعضا</h3>
+                <p class="text-4xl font-bold text-blue-600" id="total-members">--</p>
+            </div>
+
             <!-- Card for Active Members -->
             <div class="bg-white p-6 rounded-2xl shadow-lg">
                 <h3 class="text-xl font-bold mb-2 text-gray-800">اعضای فعال</h3>
-                <p class="text-4xl font-bold text-blue-600" id="active-members">--</p>
+                <p class="text-4xl font-bold text-green-600" id="active-members">--</p>
             </div>
 
-            <!-- Card for Inactive Members -->
-            <div class="bg-white p-6 rounded-2xl shadow-lg">
-                <h3 class="text-xl font-bold mb-2 text-gray-800">اعضای غیرفعال</h3>
-                <p class="text-4xl font-bold text-red-600" id="inactive-members">--</p>
-            </div>
-            
             <!-- Card for Expiring Subscriptions -->
             <div class="bg-white p-6 rounded-2xl shadow-lg">
                 <h3 class="text-xl font-bold mb-2 text-gray-800">اشتراک‌های رو به اتمام</h3>
-                <ul class="space-y-2">
+                <ul class="space-y-2 text-right">
                     <li>7 روز: <span id="expiring-7-days" class="font-bold">--</span></li>
                     <li>12 روز: <span id="expiring-12-days" class="font-bold">--</span></li>
                     <li>30 روز: <span id="expiring-30-days" class="font-bold">--</span></li>
@@ -84,8 +96,64 @@
     <footer class="p-4 text-center text-gray-500 text-sm">
         <p>&copy; 2025 پلتفرم مدیریت باشگاه. تمامی حقوق محفوظ است.</p>
     </footer>
-
+    
     <!-- Scripts -->
-    <script type="module" src="../user/app.js"></script>
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.2/+esm';
+
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://mchjfnbbfmslocmexwxs.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jaGpmbmJiZm1zbG9jbWV4d3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODk4ODcsImV4cCI6MjA3MTM2NTg4N30.IzJfkGRfyS7fLdTXu0yckGwKRFVt_wMFLZY8g68qBnM';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Function to fetch dashboard data
+        async function fetchDashboardData() {
+            // Fetch total members
+            const { count: totalMembers, error: usersError } = await supabase
+                .from('users')
+                .select('*', { count: 'exact', head: true });
+            if (!usersError) {
+                document.getElementById('total-members').textContent = totalMembers;
+            }
+
+            // Fetch active members
+            const { count: activeMembers, error: activeUsersError } = await supabase
+                .from('users')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'فعال');
+            if (!activeUsersError) {
+                document.getElementById('active-members').textContent = activeMembers;
+            }
+
+            // Fetch expiring subscriptions
+            const today = new Date();
+            const daysInFuture = [7, 12, 30];
+            
+            for (const days of daysInFuture) {
+                const futureDate = new Date();
+                futureDate.setDate(today.getDate() + days);
+                const futureDateString = futureDate.toISOString().split('T')[0];
+
+                const { count, error } = await supabase
+                    .from('subscriptions')
+                    .select('*', { count: 'exact', head: true })
+                    .lte('end_date', futureDateString)
+                    .gte('end_date', today.toISOString().split('T')[0]);
+
+                if (!error) {
+                    document.getElementById(`expiring-${days}-days`).textContent = count;
+                }
+            }
+        }
+        
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchDashboardData();
+            document.getElementById('menu-btn').addEventListener('click', () => {
+                const mobileMenu = document.getElementById('mobile-menu');
+                mobileMenu.classList.toggle('hidden');
+            });
+        });
+    </script>
 </body>
 </html>
